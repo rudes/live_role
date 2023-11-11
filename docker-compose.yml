@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+ bot:
+  build: .
+  restart: always
+  volumes:
+   - '/var/log/discord:/var/log/discord'
+  environment:
+   - DISCORD_BOTKEY=${DISCORD_BOTKEY}
+ db:
+  image: redis:7.2.1-alpine
+  restart: always
+  volumes:
+   - '/var/opt/live_role:/data'
