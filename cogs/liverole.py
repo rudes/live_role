@@ -18,7 +18,6 @@ class LiveRole(commands.Cog):
             try:
                 conf = self.config.get_all(user.guild.id)
             except Exception:
-                await self.config.setup_request(user.guild)
                 return
 
             live_role = user.guild.get_role(int(conf["live_role_id"]))
