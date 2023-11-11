@@ -21,11 +21,11 @@ class LiveRole(commands.Cog):
                 await self.config.setup_request(user.guild)
                 return
 
-            live_role = await user.guild.get_role(int(conf["live_role_id"]))
+            live_role = user.guild.get_role(int(conf["live_role_id"]))
             for m in live_role.members:
                 await self.check_status(live_role, m)
 
-            member_role = await user.guild.get_role(int(conf["member_role_id"]))
+            member_role = user.guild.get_role(int(conf["member_role_id"]))
             if member_role in user.roles:
                 await self.check_status(live_role, user)
         except Exception as e:
@@ -34,17 +34,21 @@ class LiveRole(commands.Cog):
     async def check_status(self, live_role, user):
         stream = None
         for activity in user.activities:
-            if activity is discord.Streaming:
+            if activity.type == discord.ActivityType.streaming:
                 stream = activity
 
         if stream:
             if live_role in user.roles:
                 return
-            await user.add_roles(live_role,)
+            await user.add_roles(
+                live_role,
+            )
         else:
             if live_role not in user.roles:
                 return
-            await user.remove_roles(live_role,)
+            await user.remove_roles(
+                live_role,
+            )
 
 
 def setup(bot):

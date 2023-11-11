@@ -7,28 +7,28 @@ import discord
 log = logging.getLogger(__name__)
 
 
-class ConfigModal(discord.ui.Modal):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(
-            discord.ui.Select(
-                select_type=discord.ComponentType.role_select,
-                placeholder="Twitch Subscriber",
-            ),
-            *args,
-            **kwargs,
-        )
-
-    async def callback(self, ctx: discord.Interaction):
-        member_role = self.children[0].value
-        live_role = await ctx.guild.creat_role("Live", hoist=True, color=11174623)
-        await ctx.guild.edit_role_positions(postions={live_role: 2})
-        conf = {
-            "live_role_id": live_role.id,
-            "member_role_id": member_role.id,
-        }
-        db = redis.StrictRedis(host="db")
-        db.set(str(ctx.guild.id), json.dumps(conf))
-        await ctx.response.send_message("Config created.")
+class RoleSelect(discord.ui.View):
+    @discord.ui.role_select(placeholder="Twitch Subscriber")
+    async def role_select_dropdown(
+        self, select: discord.ui.Select, ctx: discord.Interaction
+    ):
+        try:
+            member_role = select.values[0]
+            live_role = await ctx.guild.create_role(
+                name="Live", hoist=True, color=11174623
+            )
+            conf = {
+                "live_role_id": live_role.id,
+                "member_role_id": member_role.id,
+            }
+            db = redis.StrictRedis(host="db")
+            db.set(str(ctx.guild.id), json.dumps(conf))
+            await ctx.response.send_message(
+                "Discord setup, you'll need to move the `Live` role higher up in your discord settings, unfortunately I'm not able to."
+            )
+        except Exception as e:
+            log.exception(f"role_select_dropdown,{type(e)} error occured,{e}")
+            await ctx.response.send_message("Failed to setup the Discord")
 
 
 class Config:
@@ -59,8 +59,8 @@ class Config:
 
     async def setup_guild(self, ctx):
         """prepare the discord for tinyrooms"""
-        modal = ConfigModal(title="Choose the role the bot will monitor for streamers.")
-        await ctx.send_modal(modal)
+        view = RoleSelect()
+        await ctx.respond("Choose the role we'll monitor for streamers", view=view)
 
     async def setup_request(self, guild):
         """let people know to setup the bot"""
@@ -70,7 +70,7 @@ class Config:
                 chan = c
         if not chan:
             return
-        message = "Thank you for adding {self.bot.mention}\nTo setup have someone with admin rights use `/config setup`."
+        message = "Thank you for adding **Live Streaming Role**.\nTo setup have someone with admin rights use `/config setup`."
         async for m in chan.history(limit=100):
             if message == m.content:
                 return
